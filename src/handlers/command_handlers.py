@@ -5,6 +5,10 @@ from src.services.db_service import DatabaseService
 from src.models.user import User
 from src.utils.logger import log_user_action, log_info, log_error
 
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes, ConversationHandler, CallbackQueryHandler
+
 # Inicializamos el servicio de base de datos
 db_service = DatabaseService()
 
@@ -116,3 +120,54 @@ async def recommendation_command(update: Update, context: ContextTypes.DEFAULT_T
         text="Próximamente podrás recibir recomendaciones personalizadas aquí. Esta función está en desarrollo."
     )
     log_user_action(user.id, "intentó acceder a recomendaciones")
+
+
+
+# Constantes para el ConversationHandler
+SELECTING_PREFERENCE, ADDING_RESTRICTION, ADDING_GOAL = range(3)
+
+async def preferences_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Manejador para el comando /preferencias"""
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    
+    try:
+        # Obtener usuario de la base de datos
+        db_user = db_service.get_user(user.id)
+        if not db_user:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Por favor, inicia el bot primero con el comando /start"
+            )
+            return ConversationHandler.END
+        
+        # Crear teclado inline con opciones
+        keyboard = [
+            [
+                InlineKeyboardButton("Restricciones dietéticas", callback_data="pref_restrictions"),
+                InlineKeyboardButton("Objetivos nutricionales", callback_data="pref_goals")
+            ],
+                [InlineKeyboardButton("Cancelar", callback_data="pref_cancel")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Guardar las preferencias actuales en el contexto para referencia
+        context.user_data["current_preferences"] = db_user.preferences
+        
+        # Enviar mensaje con opciones
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="¿Qué preferencias te gustaría configurar?",
+            reply_markup=reply_markup
+        )
+        
+        log_user_action(user.id, "accedió a preferencias")
+        return SELECTING_PREFERENCE
+        
+    except Exception as e:
+        log_error(f"Error al acceder a preferencias para usuario {user.id}", e)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Lo siento, hubo un problema al acceder a las preferencias. Por favor, intenta de nuevo más tarde."
+        )
+        return ConversationHandler.END
