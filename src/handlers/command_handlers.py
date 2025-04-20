@@ -8,6 +8,7 @@ from src.utils.logger import log_user_action, log_info, log_error
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackQueryHandler
+from src.services.summary_service import get_day_summary, format_day_summary, generate_daily_recommendations
 
 # Inicializamos el servicio de base de datos
 db_service = DatabaseService()
@@ -171,3 +172,89 @@ async def preferences_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             text="Lo siento, hubo un problema al acceder a las preferencias. Por favor, intenta de nuevo más tarde."
         )
         return ConversationHandler.END
+    
+
+
+
+async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Manejador para el comando /resumen"""
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    
+    try:
+        # Verificar si el usuario existe en la base de datos
+        db_user = db_service.get_user(user.id)
+        if not db_user:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Por favor, inicia el bot primero con el comando /start"
+            )
+            return
+        
+        # Enviar mensaje de procesamiento
+        processing_message = await context.bot.send_message(
+            chat_id=chat_id,
+            text="Generando resumen del día, espera un momento... 📊"
+        )
+        
+        # Obtener resumen del día
+        summary = get_day_summary(user.id, db_user.timezone)
+        
+        # Formatear y enviar resumen
+        formatted_summary = format_day_summary(summary)
+        
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=processing_message.message_id,
+            text=formatted_summary,
+            parse_mode="Markdown"
+        )
+        
+        log_user_action(user.id, "solicitó resumen diario")
+        
+    except Exception as e:
+        log_error(f"Error al generar resumen para usuario {user.id}", e)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Lo siento, hubo un problema al generar el resumen. Por favor, intenta de nuevo más tarde."
+        )
+
+async def recommendation_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Manejador para el comando /recomendacion"""
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    
+    try:
+        # Verificar si el usuario existe en la base de datos
+        db_user = db_service.get_user(user.id)
+        if not db_user:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Por favor, inicia el bot primero con el comando /start"
+            )
+            return
+        
+        # Enviar mensaje de procesamiento
+        processing_message = await context.bot.send_message(
+            chat_id=chat_id,
+            text="Generando recomendaciones personalizadas basadas en tus comidas recientes y preferencias... 🧠"
+        )
+        
+        # Generar recomendaciones
+        recommendations = generate_daily_recommendations(user.id)
+        
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=processing_message.message_id,
+            text=recommendations,
+            parse_mode="Markdown"
+        )
+        
+        log_user_action(user.id, "solicitó recomendaciones")
+        
+    except Exception as e:
+        log_error(f"Error al generar recomendaciones para usuario {user.id}", e)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Lo siento, hubo un problema al generar las recomendaciones. Por favor, intenta de nuevo más tarde."
+        )

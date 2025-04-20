@@ -19,6 +19,7 @@ from src.handlers.reminder_handlers import (
     SELECTING_REMINDER_ACTION, SETTING_REMINDER_TIMES
 )
 from src.utils.logger import log_info
+from src.services.scheduler_service import SchedulerService
 
 def main() -> None:
     """Función principal que inicia el bot"""
@@ -64,6 +65,10 @@ def main() -> None:
     
     # Registrar manejador de mensajes de texto
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    scheduler_service = SchedulerService()
+    scheduler_service.start()
+    scheduler_service.schedule_reminders()
     
     # Iniciar el bot
     log_info("NutriBot está en funcionamiento!")

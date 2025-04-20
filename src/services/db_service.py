@@ -92,3 +92,13 @@ class DatabaseService:
         ).sort("timestamp", -1).limit(limit)
         
         return [Meal.from_dict(meal_data) for meal_data in meals_data]
+    
+
+    def get_users_with_active_reminders(self) -> List[Dict]:
+        # Obtener todos los usuarios con recordatorios activos
+        users_data = self.users_collection.find({
+            "reminder_settings.enabled": True,
+            "reminder_settings.times": {"$exists": True, "$ne": []}
+        })
+        
+        return list(users_data)
