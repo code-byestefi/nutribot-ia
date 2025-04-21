@@ -4,3 +4,9 @@ venv/
 *.pyc
 NOTAS.md
 
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.vscode/

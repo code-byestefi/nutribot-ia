@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, filters,
     ConversationHandler, CallbackQueryHandler
@@ -18,8 +19,8 @@ from src.handlers.reminder_handlers import (
     reminders_command, handle_reminder_action, handle_reminder_times,
     SELECTING_REMINDER_ACTION, SETTING_REMINDER_TIMES
 )
-from src.utils.logger import log_info
 from src.services.scheduler_service import SchedulerService
+from src.utils.logger import log_info
 
 def main() -> None:
     """Función principal que inicia el bot"""
@@ -65,10 +66,6 @@ def main() -> None:
     
     # Registrar manejador de mensajes de texto
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    scheduler_service = SchedulerService()
-    scheduler_service.start()
-    scheduler_service.schedule_reminders()
     
     # Iniciar el bot
     log_info("NutriBot está en funcionamiento!")
