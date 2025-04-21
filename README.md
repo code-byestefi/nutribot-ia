@@ -34,6 +34,8 @@ NutriBot-IA es un asistente nutricional personal que se integra con Telegram par
 - Clave API de Anthropic Claude
 - MongoDB (local o en la nube)
 
+![Pantalla](public\test.jpg)
+
 ### Pasos de instalación
 
 1. Clona este repositorio:
